@@ -1,5 +1,6 @@
+// app/page.tsx
 import Image from "next/image";
-
+import Button from "./components/button";
 export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
@@ -107,6 +108,10 @@ export default function Home() {
             Instantly deploy your Next.js site to a shareable URL with Vercel.
           </p>
         </a>
+      </div>
+
+      <div className="mt-8">
+        <Button />
       </div>
     </main>
   );

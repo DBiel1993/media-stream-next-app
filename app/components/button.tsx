@@ -1,0 +1,24 @@
+// app/components/Button.tsx
+"use client";
+
+import React from "react";
+import { useRouter } from "next/navigation";
+
+const Button: React.FC = () => {
+  const router = useRouter();
+
+  const handleClick = () => {
+    router.push("/streaming-page");
+  };
+
+  return (
+    <button
+      className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700 transition-colors"
+      onClick={handleClick}
+    >
+      Go to Streaming Page
+    </button>
+  );
+};
+
+export default Button;
