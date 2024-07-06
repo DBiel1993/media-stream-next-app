@@ -1,23 +1,71 @@
 "use client";
 
-import React from "react";
+import React, { useRef, useState } from "react";
 
 const UsersPage: React.FC = () => {
-  const startStream = () => {
-    // Add logic to start the video stream
-    console.log("Start Stream button clicked");
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [peerConnection, setPeerConnection] =
+    useState<RTCPeerConnection | null>(null);
+
+  const startStream = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+      setLocalStream(stream);
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
+
+      const pc = new RTCPeerConnection();
+      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+
+      pc.ontrack = (event) => {
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = event.streams[0];
+        }
+      };
+
+      setPeerConnection(pc);
+
+      console.log("Start Stream button clicked");
+    } catch (error) {
+      console.error("Error starting stream: ", error);
+    }
   };
 
   const stopStream = () => {
-    // Add logic to stop the video stream
+    if (localStream) {
+      localStream.getTracks().forEach((track) => track.stop());
+      setLocalStream(null);
+    }
+    if (peerConnection) {
+      peerConnection.close();
+      setPeerConnection(null);
+    }
     console.log("Stop Stream button clicked");
   };
 
   return (
     <div style={styles.container}>
       <div style={styles.videoContainer}>
-        <video id="video1" controls style={styles.video}></video>
-        <video id="video2" controls style={styles.video}></video>
+        <video
+          ref={localVideoRef}
+          id="video1"
+          controls
+          style={styles.video}
+          autoPlay
+        ></video>
+        <video
+          ref={remoteVideoRef}
+          id="video2"
+          controls
+          style={styles.video}
+          autoPlay
+        ></video>
       </div>
       <div style={styles.buttonContainer}>
         <button
