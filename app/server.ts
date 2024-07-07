@@ -1,3 +1,5 @@
+// server.ts
+
 import { WebSocketServer, WebSocket } from 'ws';
 
 const wss = new WebSocketServer({ port: 8080 });
@@ -17,13 +19,11 @@ wss.on('connection', (ws: WebSocket) => {
     });
   });
 
-  // Handle closing connection
   ws.on('close', () => {
     console.log('Client disconnected');
     // Perform cleanup or notify other clients if needed
   });
 
-  // Example: Send a welcome message or signaling initialization
   ws.send(JSON.stringify({ message: 'Welcome to the WebSocket server' }));
 });
 

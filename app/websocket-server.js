@@ -1,23 +1,30 @@
-// websocket-server.js
-const WebSocket = require('ws');
+// server.ts
 
-const server = new WebSocket.Server({ port: 8080 });
+import { WebSocketServer, WebSocket } from 'ws';
 
-server.on('connection', socket => {
-  socket.on('message', message => {
-    // Broadcast the message to all connected clients
-    server.clients.forEach(client => {
-      if (client !== socket && client.readyState === WebSocket.OPEN) {
+const wss = new WebSocketServer({ port: 8080 });
+
+wss.on('connection', (ws: WebSocket) => {
+  console.log('Client connected');
+
+  ws.on('message', (message: string) => {
+    console.log('Received:', message);
+    // Handle signaling messages for WebRTC
+
+    // Example: Broadcasting signaling messages
+    wss.clients.forEach((client) => {
+      if (client !== ws && client.readyState === WebSocket.OPEN) {
         client.send(message);
       }
     });
   });
 
-  socket.on('close', () => {
+  ws.on('close', () => {
     console.log('Client disconnected');
+    // Perform cleanup or notify other clients if needed
   });
 
-  console.log('Client connected');
+  ws.send(JSON.stringify({ message: 'Welcome to the WebSocket server' }));
 });
 
 console.log('WebSocket server is running on ws://localhost:8080');
