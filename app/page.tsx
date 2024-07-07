@@ -28,6 +28,9 @@ export default function Home() {
           </a>
         </div>
       </div>
+      <div className="mt-8">
+        <Button />
+      </div>
 
       <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
         <a
@@ -97,10 +100,6 @@ export default function Home() {
             Instantly deploy your Next.js site to a shareable URL with Vercel.
           </p>
         </a>
-      </div>
-
-      <div className="mt-8">
-        <Button />
       </div>
     </main>
   );
