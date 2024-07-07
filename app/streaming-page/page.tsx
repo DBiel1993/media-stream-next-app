@@ -1,14 +1,61 @@
+// pages/index.tsx
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 const UsersPage: React.FC = () => {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [peerConnection, setPeerConnection] =
     useState<RTCPeerConnection | null>(null);
+  const [localMuted, setLocalMuted] = useState<boolean>(false);
+  const [remoteMuted, setRemoteMuted] = useState<boolean>(false);
+  const socketRef = useRef<WebSocket | null>(null);
+
+  useEffect(() => {
+    socketRef.current = new WebSocket("ws://localhost:8080");
+
+    socketRef.current.onmessage = async (message) => {
+      const data = JSON.parse(message.data);
+
+      if (data.type === "offer") {
+        const pc = new RTCPeerConnection();
+        setPeerConnection(pc);
+
+        pc.onicecandidate = (event) => {
+          if (event.candidate) {
+            socketRef.current?.send(
+              JSON.stringify({ type: "candidate", candidate: event.candidate })
+            );
+          }
+        };
+
+        pc.ontrack = (event) => {
+          if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = event.streams[0];
+          }
+        };
+
+        await pc.setRemoteDescription(new RTCSessionDescription(data));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        socketRef.current?.send(JSON.stringify(pc.localDescription));
+      } else if (data.type === "answer") {
+        await peerConnection?.setRemoteDescription(
+          new RTCSessionDescription(data)
+        );
+      } else if (data.type === "candidate") {
+        await peerConnection?.addIceCandidate(
+          new RTCIceCandidate(data.candidate)
+        );
+      }
+    };
+
+    return () => {
+      socketRef.current?.close();
+    };
+  }, [peerConnection]);
 
   const startStream = async () => {
     try {
@@ -30,33 +77,23 @@ const UsersPage: React.FC = () => {
         }
       };
 
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          socketRef.current?.send(
+            JSON.stringify({ type: "candidate", candidate: event.candidate })
+          );
+        }
+      };
+
       setPeerConnection(pc);
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socketRef.current?.send(JSON.stringify(offer));
 
       console.log("Start Stream button clicked");
     } catch (error) {
       console.error("Error starting stream: ", error);
-    }
-  };
-
-  const startSecondStream = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
-      setRemoteStream(stream);
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = stream;
-      }
-
-      const pc = new RTCPeerConnection();
-      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-
-      setPeerConnection(pc);
-
-      console.log("Start Second Stream button clicked");
-    } catch (error) {
-      console.error("Error starting second stream: ", error);
     }
   };
 
@@ -72,16 +109,18 @@ const UsersPage: React.FC = () => {
     console.log("Stop Stream button clicked");
   };
 
-  const stopSecondStream = () => {
-    if (remoteStream) {
-      remoteStream.getTracks().forEach((track) => track.stop());
-      setRemoteStream(null);
+  const toggleMuteLocal = () => {
+    if (localVideoRef.current) {
+      localVideoRef.current.muted = !localVideoRef.current.muted;
+      setLocalMuted(localVideoRef.current.muted);
     }
-    if (peerConnection) {
-      peerConnection.close();
-      setPeerConnection(null);
+  };
+
+  const toggleMuteRemote = () => {
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.muted = !remoteVideoRef.current.muted;
+      setRemoteMuted(remoteVideoRef.current.muted);
     }
-    console.log("Stop Second Stream button clicked");
   };
 
   return (
@@ -110,22 +149,16 @@ const UsersPage: React.FC = () => {
           Start Stream
         </button>
         <button
-          style={{ ...styles.button, ...styles.start }}
-          onClick={startSecondStream}
-        >
-          Start Second Stream
-        </button>
-        <button
           style={{ ...styles.button, ...styles.stop }}
           onClick={stopStream}
         >
           Stop Stream
         </button>
-        <button
-          style={{ ...styles.button, ...styles.stop }}
-          onClick={stopSecondStream}
-        >
-          Stop Second Stream
+        <button style={styles.button} onClick={toggleMuteLocal}>
+          {localMuted ? "Unmute Local" : "Mute Local"}
+        </button>
+        <button style={styles.button} onClick={toggleMuteRemote}>
+          {remoteMuted ? "Unmute Remote" : "Mute Remote"}
         </button>
       </div>
     </div>
@@ -159,6 +192,7 @@ const styles = {
     display: "flex",
     justifyContent: "space-around",
     width: "60%",
+    marginTop: "10px",
   },
   button: {
     padding: "10px 20px",
