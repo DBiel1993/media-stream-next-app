@@ -4,9 +4,12 @@ const wss = new WebSocketServer({ port: 8080 });
 
 wss.on('connection', (ws: WebSocket) => {
   console.log('Client connected');
+
   ws.on('message', (message: string) => {
     console.log('Received:', message);
-    // Broadcast to everyone else
+    // Handle signaling messages for WebRTC
+
+    // Example: Broadcasting signaling messages
     wss.clients.forEach((client) => {
       if (client !== ws && client.readyState === WebSocket.OPEN) {
         client.send(message);
@@ -14,7 +17,14 @@ wss.on('connection', (ws: WebSocket) => {
     });
   });
 
-  ws.send(JSON.stringify({ message: 'Welcome to the WebRTC signaling server' }));
+  // Handle closing connection
+  ws.on('close', () => {
+    console.log('Client disconnected');
+    // Perform cleanup or notify other clients if needed
+  });
+
+  // Example: Send a welcome message or signaling initialization
+  ws.send(JSON.stringify({ message: 'Welcome to the WebSocket server' }));
 });
 
 console.log('WebSocket server is running on ws://localhost:8080');
