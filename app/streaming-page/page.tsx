@@ -3,120 +3,100 @@
 import React, { useRef, useState } from "react";
 
 const UsersPage: React.FC = () => {
-  const localVideoRef1 = useRef<HTMLVideoElement>(null);
-  const localVideoRef2 = useRef<HTMLVideoElement>(null);
-  const remoteVideoRef1 = useRef<HTMLVideoElement>(null);
-  const remoteVideoRef2 = useRef<HTMLVideoElement>(null);
-  const [localStream1, setLocalStream1] = useState<MediaStream | null>(null);
-  const [localStream2, setLocalStream2] = useState<MediaStream | null>(null);
-  const [peerConnection1, setPeerConnection1] =
-    useState<RTCPeerConnection | null>(null);
-  const [peerConnection2, setPeerConnection2] =
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+  const [peerConnection, setPeerConnection] =
     useState<RTCPeerConnection | null>(null);
 
-  const startStream1 = async () => {
+  const startStream = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
       });
-      setLocalStream1(stream);
-      if (localVideoRef1.current) {
-        localVideoRef1.current.srcObject = stream;
+      setLocalStream(stream);
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
       }
 
       const pc = new RTCPeerConnection();
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
       pc.ontrack = (event) => {
-        if (remoteVideoRef1.current) {
-          remoteVideoRef1.current.srcObject = event.streams[0];
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = event.streams[0];
         }
       };
 
-      setPeerConnection1(pc);
+      setPeerConnection(pc);
 
-      console.log("Start Stream 1 button clicked");
+      console.log("Start Stream button clicked");
     } catch (error) {
-      console.error("Error starting stream 1: ", error);
+      console.error("Error starting stream: ", error);
     }
   };
 
-  const startStream2 = async () => {
+  const startSecondStream = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
       });
-      setLocalStream2(stream);
-      if (localVideoRef2.current) {
-        localVideoRef2.current.srcObject = stream;
+      setRemoteStream(stream);
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = stream;
       }
 
       const pc = new RTCPeerConnection();
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
-      pc.ontrack = (event) => {
-        if (remoteVideoRef2.current) {
-          remoteVideoRef2.current.srcObject = event.streams[0];
-        }
-      };
+      setPeerConnection(pc);
 
-      setPeerConnection2(pc);
-
-      console.log("Start Stream 2 button clicked");
+      console.log("Start Second Stream button clicked");
     } catch (error) {
-      console.error("Error starting stream 2: ", error);
+      console.error("Error starting second stream: ", error);
     }
   };
 
   const stopStream = () => {
-    if (localStream1) {
-      localStream1.getTracks().forEach((track) => track.stop());
-      setLocalStream1(null);
+    if (localStream) {
+      localStream.getTracks().forEach((track) => track.stop());
+      setLocalStream(null);
     }
-    if (localStream2) {
-      localStream2.getTracks().forEach((track) => track.stop());
-      setLocalStream2(null);
-    }
-    if (peerConnection1) {
-      peerConnection1.close();
-      setPeerConnection1(null);
-    }
-    if (peerConnection2) {
-      peerConnection2.close();
-      setPeerConnection2(null);
+    if (peerConnection) {
+      peerConnection.close();
+      setPeerConnection(null);
     }
     console.log("Stop Stream button clicked");
+  };
+
+  const stopSecondStream = () => {
+    if (remoteStream) {
+      remoteStream.getTracks().forEach((track) => track.stop());
+      setRemoteStream(null);
+    }
+    if (peerConnection) {
+      peerConnection.close();
+      setPeerConnection(null);
+    }
+    console.log("Stop Second Stream button clicked");
   };
 
   return (
     <div style={styles.container}>
       <div style={styles.videoContainer}>
         <video
-          ref={localVideoRef1}
-          id="video1"
+          ref={localVideoRef}
+          id="localVideo"
           controls
           style={styles.video}
           autoPlay
         ></video>
         <video
-          ref={remoteVideoRef1}
-          id="video2"
-          controls
-          style={styles.video}
-          autoPlay
-        ></video>
-        <video
-          ref={localVideoRef2}
-          id="video3"
-          controls
-          style={styles.video}
-          autoPlay
-        ></video>
-        <video
-          ref={remoteVideoRef2}
-          id="video4"
+          ref={remoteVideoRef}
+          id="remoteVideo"
           controls
           style={styles.video}
           autoPlay
@@ -125,21 +105,27 @@ const UsersPage: React.FC = () => {
       <div style={styles.buttonContainer}>
         <button
           style={{ ...styles.button, ...styles.start }}
-          onClick={startStream1}
+          onClick={startStream}
         >
-          Start Stream 1
+          Start Stream
         </button>
         <button
           style={{ ...styles.button, ...styles.start }}
-          onClick={startStream2}
+          onClick={startSecondStream}
         >
-          Start Stream 2
+          Start Second Stream
         </button>
         <button
           style={{ ...styles.button, ...styles.stop }}
           onClick={stopStream}
         >
           Stop Stream
+        </button>
+        <button
+          style={{ ...styles.button, ...styles.stop }}
+          onClick={stopSecondStream}
+        >
+          Stop Second Stream
         </button>
       </div>
     </div>
@@ -164,7 +150,7 @@ const styles = {
     marginBottom: "20px",
   },
   video: {
-    width: "22%",
+    width: "45%",
     height: "auto",
     backgroundColor: "#000",
     border: "1px solid #ccc",
@@ -172,7 +158,7 @@ const styles = {
   buttonContainer: {
     display: "flex",
     justifyContent: "space-around",
-    width: "50%",
+    width: "60%",
   },
   button: {
     padding: "10px 20px",
